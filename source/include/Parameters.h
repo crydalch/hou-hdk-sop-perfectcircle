@@ -1,16 +1,7 @@
 /*
-	Use this as a starting template for any SOP operator.
+	Creates circles from selected edges.
 
 	IMPORTANT! ------------------------------------------
-	* External macros used:
-		GET_SOP_Namespace()				- comes from "Macros_Namespace.h"
-		DECLARE_SOP_Namespace_Start()	- comes from "Macros_Namespace.h"
-		DECLARE_SOP_Namespace_End		- comes from "Macros_Namespace.h"	
-		__FILTER_SECTION_PRM()
-		__MAIN_SECTION_PRM()
-		__ADDITIONAL_SECTION_PRM()
-		DECLARE_DescriptionPRM()		- comes from "Macros_DescriptionPRM.h"
-		__DEBUG_SECTION_PRM()	
 	-----------------------------------------------------
 
 	Author: 	SNOWFLAKE
@@ -32,18 +23,27 @@
 
 #pragma once
 
+#ifndef ____parameters_h____
+#define ____parameters_h____
+
 /* -----------------------------------------------------------------
 INCLUDES                                                           |
 ----------------------------------------------------------------- */
 
-#include "SOP_PerfectCircle_Operator.h"
-#include <SOP/Macros_SwitcherPRM.h>
+// hou-hdk-common
+#include <Macros/SwitcherPRM.h>
+#include <Macros/GroupMenuPRM.h>
+#include <Macros/FloatPRM.h>
+#include <Macros/TogglePRM.h>
+
+// this
+#include "SOP_PerfectCircle.h"
 
 /* -----------------------------------------------------------------
 DEFINES                                                            |
 ----------------------------------------------------------------- */
 
-#define SOP_Operator GET_SOP_Namespace()::SOP_PerfectCircle_Operator
+#define SOP_Operator GET_SOP_Namespace()::SOP_PerfectCircle
 
 /* -----------------------------------------------------------------
 USING                                                              |
@@ -59,13 +59,30 @@ DECLARE_SOP_Namespace_Start()
 
 	namespace UI
 	{
-		__DECLARE__Filter_Section_PRM(0)
-		__DECLARE_Main_Section_PRM(0)
+		__DECLARE__Filter_Section_PRM(3)
+		DECLARE_Default_EdgeGroup_Input_0_PRM(input0)
+		DECLARE_Custom_Toggle_with_Separator_OFF_PRM("useunsharededges", "Use Unshared Edges", "useunsharededgesseparator", 0, "Use unshared edges instead of edge group.", useUnsharedEdges)
 
-		__DECLARE_Additional_Section_PRM(4)
+		__DECLARE_Main_Section_PRM(2)
+		static auto		radiusModeChoiceMenuParm_Name = PRM_Name("radiusmode", "Radius Mode");
+		static auto		radiusModeChoiceMenuParm_Range = PRM_Range(PRM_RANGE_RESTRICTED, 0, PRM_RANGE_RESTRICTED, 3);
+		static PRM_Name radiusModeChoiceMenuParm_Choices[] =
+		{
+			PRM_Name("0", "Default"),
+			PRM_Name("1", "Closest Point"),
+			PRM_Name("2", "Farthest Point"),
+			PRM_Name("3", "Custom"),
+			PRM_Name(0)
+		};
+		static auto		radiusModeChoiceMenuParm_ChoiceList = PRM_ChoiceList(PRM_CHOICELIST_SINGLE, radiusModeChoiceMenuParm_Choices);
+		auto			radiusModeChoiceMenu_Parameter = PRM_Template(PRM_ORD, 1, &radiusModeChoiceMenuParm_Name, 0, &radiusModeChoiceMenuParm_ChoiceList, &radiusModeChoiceMenuParm_Range, &SOP_Operator::CallbackSetRadiusMode, 0, 1, "Specify radius mode.");
+		
+		DECLARE_Custom_Float_0R_to_MaxU_PRM("radiusvalue", "Value", 1, 0.5, 0, "2 * r = 1 unit", radiusValue)
+
+		__DECLARE_Additional_Section_PRM(10)
+		DECLARE_Custom_Toggle_with_Separator_OFF_PRM("setmorph", "Morph", "setmorphseparator", &SOP_Operator::CallbackSetMorph, "Blend between original and modified position.", setMorph)
+		DECLARE_Custom_Float_MinR_to_MaxU_PRM("morphvalue", "Value", 0, 100, 100, 0, "Percents", morphValue)
 		DECLARE_DescriptionPRM(SOP_Operator)
-
-		__DECLARE_Debug_Section_PRM(0)
 	}
 		
 DECLARE_SOP_Namespace_End
@@ -75,3 +92,5 @@ UNDEFINES                                                          |
 ----------------------------------------------------------------- */
 
 #undef SOP_Operator
+
+#endif // !____parameters_h____

@@ -1,9 +1,7 @@
 /*
-	Use this as a starting template for any SOP operator.
+	Creates circles from selected edges.
 
 	IMPORTANT! ------------------------------------------
-	* External macros used:
-		GET_SOP_Namespace() - comes from "Macros_Namespace.h"
 	-----------------------------------------------------
 
 	Author: 	SNOWFLAKE
@@ -27,22 +25,34 @@
 INCLUDES                                                           |
 ----------------------------------------------------------------- */
 
+// SESI
 #include <UT/UT_DSOVersion.h>
 #include <OP/OP_OperatorTable.h>
+#include <BM/BM_ResourceManager.h>
 
-#include "SOP_PerfectCircle_Operator.h"
+// hou-hdk-common
+#include <Macros/GroupMenuPRM.h>
+
+// this
+#include "SOP_PerfectCircle.h"
 
 /* -----------------------------------------------------------------
 DEFINES                                                            |
 ----------------------------------------------------------------- */
 
-#define SOP_Operator		GET_SOP_Namespace()::SOP_PerfectCircle_Operator
+#define SOP_Operator		GET_SOP_Namespace()::SOP_PerfectCircle
 #define SOP_SmallName		"modeling::perfectcircle::1.0"
 #define SOP_BigName			"Perfect Circle"
-#define SOP_TabMenuPath		"Modeling"
+#define SOP_TabMenuPath		"Toolkit/Modeling"
+
+#define MSS_Selector		GET_SOP_Namespace()::MSS_PerfectCircleSelector
+#define MSS_SmallName		"modeling::perfectcircleselector::1.0"
+#define MSS_BigName			"Perfect Circle (selector)"
+#define MSS_Prompt			"Select edges to create circle. Press <enter> to accept."
+#define SOP_GroupPRM		CONST_EdgeGroupInput0_Name
 
 /* -----------------------------------------------------------------
-REGISTRATION                                                       |
+OPERATOR                                                           |
 ----------------------------------------------------------------- */
 
 void 
@@ -54,24 +64,81 @@ newSopOperator(OP_OperatorTable* table)
 	(
 		SOP_SmallName,
 		SOP_BigName,
-		SOP_Operator::CreateOperator,
+		SOP_Operator::CreateMe,
 		SOP_Operator::parametersList,
-		1, // min inputs 
-		1, // max inputs
+		1,								// min inputs 
+		1,								// max inputs
 		0,
-		OP_FLAG_GENERATOR, // type of node
+		0,								// type of node OP_FLAG_GENERATOR (BE CAREFUL WITH THIS LITTLE FUCKER)
 		0,
-		1, // outputs count
+		1,								// outputs count
 		SOP_TabMenuPath
 	);
-
+	
 	success = table->addOperator(sop);	
 	//table->addOpHidden(sop->getName());	
 }
 
 /* -----------------------------------------------------------------
+SELECTOR                                                           |
+----------------------------------------------------------------- */
+
+void
+newSelector(BM_ResourceManager* manager)
+{
+	// find operator
+	auto sopOperator = OP_Network::getOperatorTable(SOP_TABLE_NAME)->getOperator(SOP_SmallName);
+	if (!sopOperator)
+	{
+		UT_ASSERT(!"Could not find required operator!");
+		return;
+	}
+
+	// create selector
+	auto sopSelector = new PI_SelectorTemplate
+	(
+		MSS_SmallName,
+		MSS_BigName,
+		SOP_TABLE_NAME
+	);
+	
+	if (sopOperator)
+	{
+		// setup selector
+		sopSelector->constructor((void *)&MSS_Selector::CreateMe);
+		sopSelector->data(OP3DtheEdgeSelTypes);
+		auto success = manager->registerSelector(sopSelector);
+		if (!success) return;
+
+		// bind selector		
+		success = manager->bindSelector
+		(
+			sopOperator,
+			MSS_SmallName,
+			MSS_BigName,
+			MSS_Prompt,
+			SOP_GroupPRM,				// Parameter to write group to.
+			0,							// Input number to wire up.
+			1,							// 1 means this input is required.
+			"0x000000ff",				// Prim/point mask selection.
+			0,
+			0,
+			0,
+			0,
+			false
+		);
+	}
+}
+
+/* -----------------------------------------------------------------
 UNDEFINES                                                          |
 ----------------------------------------------------------------- */
+
+#undef SOP_GroupPRM
+#undef MSS_Prompt
+#undef MSS_BigName
+#undef MSS_SmallName
+#undef MSS_Selector
 
 #undef SOP_TabMenuPath
 #undef SOP_BigName

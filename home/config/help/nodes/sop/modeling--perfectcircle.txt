@@ -1,0 +1,28 @@
+#type: node
+#context: sop
+#internal: perfectcircle
+#icon: /nodes/sop/SOP_PerfectCircle.png
+
+#tags: shape
+
+= Perfect Circle =
+
+""" Form circle from selection """
+
+@parameters
+
+== Filter ==
+
+[Include:modeling--straighten#edgegroupinput0]
+
+== Main ==
+	
+Morph:
+    #id: morphpower
+    Blend between original position and modified position
+	
+== Additional ==
+
+[Include:hdktemplates--soptemplate#adddescription]
+[Include:hdktemplates--soptemplate#cleandescription]
+[Include:hdktemplates--soptemplate#descriptionmessage]
