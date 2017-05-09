@@ -61,7 +61,7 @@ DECLARE_SOP_Namespace_Start()
 	{
 		__DECLARE__Filter_Section_PRM(3)
 		DECLARE_Default_EdgeGroup_Input_0_PRM(input0)
-		DECLARE_Custom_Toggle_with_Separator_OFF_PRM("useunsharededges", "Use Unshared Edges", "useunsharededgesseparator", 0, "Use unshared edges instead of edge group.", useUnsharedEdges)
+		DECLARE_Toggle_with_Separator_OFF_PRM("useunsharededges", "Use Unshared Edges", "useunsharededgesseparator", 0, "Use unshared edges instead of edge group.", useUnsharedEdges)
 
 		__DECLARE_Main_Section_PRM(2)
 		static auto		radiusModeChoiceMenuParm_Name = PRM_Name("radiusmode", "Radius Mode");
@@ -79,8 +79,8 @@ DECLARE_SOP_Namespace_Start()
 		
 		DECLARE_Custom_Float_0R_to_MaxU_PRM("radiusvalue", "Value", 1, 0.5, 0, "2 * r = 1 unit", radiusValue)
 
-		__DECLARE_Additional_Section_PRM(10)
-		DECLARE_Custom_Toggle_with_Separator_OFF_PRM("setmorph", "Morph", "setmorphseparator", &SOP_Operator::CallbackSetMorph, "Blend between original and modified position.", setMorph)
+		__DECLARE_Additional_Section_PRM(7)
+		DECLARE_Toggle_with_Separator_OFF_PRM("setmorph", "Morph", "setmorphseparator", &SOP_Operator::CallbackSetMorph, "Blend between original and modified position.", setMorph)
 		DECLARE_Custom_Float_MinR_to_MaxU_PRM("morphvalue", "Value", 0, 100, 100, 0, "Percents", morphValue)
 		DECLARE_DescriptionPRM(SOP_Operator)
 	}

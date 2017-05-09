@@ -39,6 +39,7 @@ INCLUDES                                                           |
 // hou-hdk-common
 #include <Macros/ParameterList.h>
 #include <Utility/ParameterAccessing.h>
+#include <Utility/EdgeGroupAccessing.h>
 
 // this
 #include "Parameters.h"
@@ -50,7 +51,7 @@ DEFINES                                                            |
 #define SOP_Operator			GET_SOP_Namespace()::SOP_PerfectCircle
 #define SOP_SmallName			"modeling::perfectcircle::1.0"
 #define SOP_Input_Name_0		"Geometry"
-#define SOP_Icon_Name			"SOP_circle"
+#define SOP_Icon_Name			"nodeway_short_dark_WB.png"
 #define SOP_Base_Operator		SOP_Node
 #define MSS_Selector			GET_SOP_Namespace()::MSS_PerfectCircleSelector
 
@@ -59,6 +60,7 @@ DEFINES                                                            |
 
 #define UI						GET_SOP_Namespace()::UI
 #define PRM_ACCESS				GET_Base_Namespace()::Utility::PRM
+#define GRP_ACCESS				GET_Base_Namespace()::Utility::Groups
 
 /* -----------------------------------------------------------------
 PARAMETERS                                                         |
@@ -172,173 +174,8 @@ SOP_Operator::cookInputGroups(OP_Context& context, int alone)
 HELPERS                                                            |
 ----------------------------------------------------------------- */
 
-bool
-SOP_Operator::ExtractDataFromEdges(const GA_EdgeGroup* group, GA_EdgeTData<GA_Edge>& edgedata, UT_AutoInterrupt progress)
-{
-	// make sure nothing is cached
-	edgedata.Clear();
-
-	// extract data from edges
-	for (auto edgeIt = group->begin(); !edgeIt.atEnd(); ++edgeIt)
-	{
-		if (progress.wasInterrupted())
-		{
-			addError(SOP_ErrorCodes::SOP_MESSAGE, "Operation interrupted");
-			return false;
-		}
-		if (!edgeIt->isValid()) continue;
-
-		edgedata.AddEdge(edgeIt->p0(), *edgeIt);
-		edgedata.AddEdge(edgeIt->p1(), *edgeIt);
-	}
-
-	// collect endpoints
-	for (auto data : edgedata.GetExtractedData())
-	{
-		if (progress.wasInterrupted())
-		{
-			addError(SOP_ErrorCodes::SOP_MESSAGE, "Operation interrupted");
-			return false;
-		}
-		if (data.second.size() > 1) continue;
-
-		edgedata.AddEndPoint(data.first);
-	}
-
-	return true;
-}
-
-bool
-SOP_Operator::FindAllEdgeIslands(GA_EdgeTData<GA_Edge>& edgedata, UT_AutoInterrupt progress)
-{
-	// make sure nothing is cached
-	this->_edgeIslands.clear();
-
-	// in theory we could speed this up by searching for islands that have endpoints first, to exclude them
-	// but why loop two times if we can do one loop :)
-	// instead we will mark the ones with endpoints as INVALID
-	for (auto point : edgedata.GetExtractedData())
-	{
-		if (progress.wasInterrupted())
-		{
-			addError(SOP_ErrorCodes::SOP_MESSAGE, "Operation interrupted");
-			return false;
-		}
-
-		// check if island was already discovered		
-		bool canContinue = true;
-		for (auto island : this->_edgeIslands)
-		{
-			if (progress.wasInterrupted())
-			{
-				addError(SOP_ErrorCodes::SOP_MESSAGE, "Operation interrupted");
-				return false;
-			}
-
-			if (island.Contains(point.first))
-			{
-				canContinue = false;				
-				break;
-			}
-		}
-		if (!canContinue) continue;
-	
-		// we are looking only for islands that doesn't have endpoints
-		auto edgeIsland = GA_EdgeTIsland<GA_Edge>(EdgeIslandType::CLOSED);
-
-		auto success = FindEdgesRecurse(edgedata, point.first, point.first, edgeIsland, progress);
-		if (!success) return false;
-
-		this->_edgeIslands.push_back(edgeIsland);
-	}
-
-	return true;
-}
-
-bool
-SOP_Operator::FindEdgesRecurse(GA_EdgeTData<GA_Edge>& edgedata, const GA_Offset startoffset, const GA_Offset nextoffset, GA_EdgeTIsland<GA_Edge>& edgeisland, UT_AutoInterrupt progress)
-{
-	// how many edges?
-	auto edges = edgedata.GetExtractedData().at(nextoffset);
-	switch (edges.size())
-	{
-		case 0:
-			{
-				// this shouldn't ever happen, but who knows?! I don't :)
-				std::cout << "WTF?" << std::endl;
-			}
-			break;
-		case 1:
-			{ return WhenOneEdge(edgedata, startoffset, nextoffset, edgeisland, progress); }
-			break;
-		default:
-			{ return WhenMoreThanOneEdge(edgedata, startoffset, nextoffset, edgeisland, progress); }
-			break;
-	}
-
-	return true;
-}
-
-bool
-SOP_Operator::WhenOneEdge(GA_EdgeTData<GA_Edge>& edgedata, const GA_Offset startoffset, const GA_Offset nextoffset, GA_EdgeTIsland<GA_Edge>& edgeisland, UT_AutoInterrupt progress)
-{
-	// store ourself
-	edgeisland.AddEndPoint(nextoffset);
-
-	// are we at start?
-	if (nextoffset == startoffset)
-	{
-		// grab edge...
-		auto edge = *edgedata.GetExtractedData().at(nextoffset).begin();
-		edgeisland.AddEdge(edge);
-
-		// ... and process next point
-		auto newNextOffset = edge.p0() == nextoffset ? edge.p1() : edge.p0();
-		return FindEdgesRecurse(edgedata, startoffset, newNextOffset, edgeisland, progress);
-	}
-
-	return true;
-}
-
-bool
-SOP_Operator::WhenMoreThanOneEdge(GA_EdgeTData<GA_Edge>& edgedata, const GA_Offset startoffset, const GA_Offset nextoffset, GA_EdgeTIsland<GA_Edge>& edgeisland, UT_AutoInterrupt progress)
-{
-	// store ourself
-	edgeisland.AddPoint(nextoffset);
-
-	// grab edges	
-	auto edges = edgedata.GetExtractedData().at(nextoffset);
-	for (auto edge : edges)
-	{
-		if (progress.wasInterrupted())
-		{
-			addError(SOP_ErrorCodes::SOP_MESSAGE, "Operation interrupted");
-			return false;
-		}
-
-		// find point that != nextoffset and is not stored in edgeisland
-		auto newNextOffset = edge.p0() == nextoffset ? edge.p1() : edge.p0();
-		if (edgeisland.Contains(newNextOffset))
-		{
-			// if this is the case, that means we are in situation where two discovered point meet
-			// and we have to check if one any of those points already added edge
-			// if not, add it
-			if (!edgeisland.Contains(edge)) edgeisland.AddEdge(edge);
-			continue;
-		}
-
-		// now we are sure that we didn't visited this branch, so we can add edge...
-		edgeisland.AddEdge(edge);
-
-		// ... and process next point
-		return FindEdgesRecurse(edgedata, startoffset, newNextOffset, edgeisland, progress);
-	}
-
-	return true;
-}
-
 OP_ERROR
-SOP_Operator::MakePerfectCircleFromEachEdgeIsland(UT_AutoInterrupt progress, fpreal time)
+SOP_Operator::MakePerfectCircleFromEachEdgeIsland(GA_EdgeIslandBundle& edgeislands, UT_AutoInterrupt progress, fpreal time)
 {	
 	UT_Map<GA_Offset, UT_Vector3>	originalPositions;
 	UT_Map<GA_Offset, UT_Vector3>	edits;
@@ -359,7 +196,7 @@ SOP_Operator::MakePerfectCircleFromEachEdgeIsland(UT_AutoInterrupt progress, fpr
 	morphValueState = setMorphState ? 0.01 * morphValueState : 1.0;				// from percentage
 
 #define PROGRESS_ESCAPE(node, message, passedprogress) if (passedprogress.wasInterrupted()) { node->addError(SOP_ErrorCodes::SOP_MESSAGE, message); return error(); }
-	for (auto island : this->_edgeIslands)
+	for (auto island : edgeislands)
 	{
 		PROGRESS_ESCAPE(this, "Operation interrupted", progress)
 
@@ -380,10 +217,11 @@ SOP_Operator::MakePerfectCircleFromEachEdgeIsland(UT_AutoInterrupt progress, fpr
 		edges.clear();
 		
 		// store original positions		
-		for (auto point : island.GetPoints())
+		auto it = island.Begin();
+		for (it; !it.atEnd(); it.advance())
 		{
 			PROGRESS_ESCAPE(this, "Operation interrupted", progress)
-			originalPositions[point] = this->gdp->getPos3(point);
+			originalPositions[*it] = this->gdp->getPos3(*it);
 		}
 		
 		// calculate circle
@@ -404,17 +242,18 @@ SOP_Operator::MakePerfectCircleFromEachEdgeIsland(UT_AutoInterrupt progress, fpr
 		{
 			// find center
 			auto circleCenter = UT_Vector3(0.0, 0.0, 0.0);
-			for (auto offset : island.GetPoints())
+			it = island.Begin();
+			for (it; !it.atEnd(); it.advance())
 			{
 				PROGRESS_ESCAPE(this, "Operation interrupted", progress)
-				circleCenter += this->gdp->getPos3(offset);
+				circleCenter += this->gdp->getPos3(*it);
 			}
-			circleCenter = circleCenter / island.GetPoints().size();
+			circleCenter = circleCenter / island.Entries();
 
 			// find closest and farthest position
-			auto it = originalPositions.begin();
-			auto closestPosition = UT_Vector3(originalPositions[it->first]);
-			auto farthestPosition = UT_Vector3(originalPositions[it->first]);
+			auto posIt = originalPositions.begin();
+			auto closestPosition = UT_Vector3(originalPositions[posIt->first]);
+			auto farthestPosition = UT_Vector3(originalPositions[posIt->first]);
 					
 			for (auto position : originalPositions)
 			{
@@ -429,19 +268,20 @@ SOP_Operator::MakePerfectCircleFromEachEdgeIsland(UT_AutoInterrupt progress, fpr
 			}
 
 			// modify radius
-			for (auto offset : island.GetPoints())
-			{			
+			it = island.Begin();
+			for (it; !it.atEnd(); it.advance())
+			{
 				PROGRESS_ESCAPE(this, "Operation interrupted", progress)
-						
+
 				// calculate projection
 				// TODO: probably one of the UT_Vector3 built in methods can handle this
-				auto direction = this->gdp->getPos3(offset) - circleCenter;
+				auto direction = this->gdp->getPos3(*it) - circleCenter;
 				direction.normalize();
 
 				// move points to new position
-				this->gdp->setPos3(offset, circleCenter);
+				this->gdp->setPos3(*it, circleCenter);
 
-				UT_Vector3 newPosition = this->gdp->getPos3(offset);
+				UT_Vector3 newPosition = this->gdp->getPos3(*it);
 				switch (radiusModeState)
 				{
 					case 1:
@@ -454,18 +294,20 @@ SOP_Operator::MakePerfectCircleFromEachEdgeIsland(UT_AutoInterrupt progress, fpr
 						{ newPosition += (direction * radiusValueState); }
 						break;
 				}
-		
-				this->gdp->setPos3(offset, newPosition);
-			}
+
+				this->gdp->setPos3(*it, newPosition);
+			}			
 		}
 
 		// morph
 		if (!setMorphState) continue;
-		for (auto point : island.GetPoints())
+
+		it = island.Begin();
+		for (it; !it.atEnd(); it.advance())
 		{
 			PROGRESS_ESCAPE(this, "Operation interrupted", progress)
-			const auto newPosition = SYSlerp(originalPositions[point], this->gdp->getPos3(point), morphValueState);
-			this->gdp->setPos3(point, newPosition);
+			const auto newPosition = SYSlerp(originalPositions[*it], this->gdp->getPos3(*it), morphValueState);
+			this->gdp->setPos3(*it, newPosition);
 		}
 	}
 #undef PROGRESS_ESCAPE
@@ -495,31 +337,40 @@ SOP_Operator::cookMySop(OP_Context& context)
 			if (this->_edgeUnsharedGroup) GUfindUnsharedEdges(*this->gdp, *this->_edgeUnsharedGroup);
 			if (!this->_edgeUnsharedGroup || this->_edgeUnsharedGroup->isEmpty())
 			{
+				clearSelection();
 				addWarning(SOP_ErrorCodes::SOP_ERR_BADGROUP);
 				return error();
 			}
+			
+			select(*this->_edgeUnsharedGroup);
 		}
 		else
 		{	
 			if (!this->_edgeGroupInput0 || this->_edgeGroupInput0->isEmpty())
 			{
+				clearSelection();
 				addWarning(SOP_ErrorCodes::SOP_ERR_BADGROUP);
 				return error();
 			}
 		}
 
-		GA_EdgeTData<GA_Edge> edgeGroupedData;
+		// edge selection can contain multiple separate edge island
+		auto edgeData = GA_EdgesData();
+		edgeData.Clear();
 
-		auto success = ExtractDataFromEdges(useUnsharedEdgesState? this->_edgeUnsharedGroup : this->_edgeGroupInput0, edgeGroupedData, progress);
+		auto success = GRP_ACCESS::Edge::Break::PerPoint(this, (useUnsharedEdgesState? this->_edgeUnsharedGroup : this->_edgeGroupInput0), edgeData, progress);
 		if ((success && error() >= OP_ERROR::UT_ERROR_WARNING) || (!success && error() >= OP_ERROR::UT_ERROR_NONE)) return error();
 
-		// once we have endpoints, we can go thru our edge group and split it on edge islands		
-		success = FindAllEdgeIslands(edgeGroupedData, progress);
+		// once we have endpoints, we can go thru our edge group and split it on edge islands	
+		auto edgeIslands = GA_EdgeIslandBundle();
+		edgeIslands.clear();
+
+		success = GRP_ACCESS::Edge::Break::PerIsland(this, edgeData, edgeIslands, EdgeIslandType::CLOSED, progress);
 		if ((success && error() >= OP_ERROR::UT_ERROR_WARNING) || (!success && error() >= OP_ERROR::UT_ERROR_NONE)) return error();
 
 		// finally, we can go thru each edge island and calculate and apply circles
-		return MakePerfectCircleFromEachEdgeIsland(progress, currentTime);
-	}	
+		return MakePerfectCircleFromEachEdgeIsland(edgeIslands, progress, currentTime);
+	}		
 
 	return error();
 }
