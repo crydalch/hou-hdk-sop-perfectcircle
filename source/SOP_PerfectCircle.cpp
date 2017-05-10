@@ -211,6 +211,12 @@ SOP_Operator::MakePerfectCircleFromEachEdgeIsland(GA_EdgeIslandBundle& edgeislan
 			continue;
 		}
 
+		if (island.IsValid() && island.HasMultiOffsets())
+		{
+			addWarning(SOP_ErrorCodes::SOP_MESSAGE, "Edge islands with multipoints detected.");
+			continue;
+		}
+
 		// clear everything to be sure that nothing is cached
 		originalPositions.clear();
 		edits.clear();
