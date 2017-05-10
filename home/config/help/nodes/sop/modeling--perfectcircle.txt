@@ -60,8 +60,10 @@ Radius Mode:
 		Specify custom radius value.
 	
 Value:
-	#id: radiusvalue
+	#id: radiusvalue	
 	Radius in world units. 2 * r = 1 Houdini unit.
+	:note:
+	Visible only when _Radius Mode_ is set to _Custom_.
 
 == Additional ==
 	
