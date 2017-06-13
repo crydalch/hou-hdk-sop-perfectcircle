@@ -90,7 +90,7 @@ SOP_Operator::updateParmsFlags()
 	DEFAULTS_UpdateParmsFlags(SOP_Base_Operator)
 
 	// is input connected?
-	exint is0Connected = getInput(0) == NULL ? 0 : 1;
+	exint is0Connected = getInput(0) == nullptr ? 0 : 1;
 
 	/* ---------------------------- Set Global Visibility ---------------------------- */
 
@@ -147,7 +147,10 @@ OPERATOR INITIALIZATION                                            |
 
 SOP_Operator::~SOP_PerfectCircle() { }
 
-SOP_Operator::SOP_PerfectCircle(OP_Network* network, const char* name, OP_Operator* op) : SOP_Base_Operator(network, name, op) 
+SOP_Operator::SOP_PerfectCircle(OP_Network* network, const char* name, OP_Operator* op) 
+: SOP_Base_Operator(network, name, op), 
+_edgeGroupInput0(nullptr), 
+_edgeUnsharedGroup(nullptr)
 { op->setIconName(SOP_Icon_Name); }
 
 OP_Node* 
@@ -160,8 +163,8 @@ SOP_Operator::inputLabel(unsigned input) const
 
 OP_ERROR
 SOP_Operator::cookInputGroups(OP_Context& context, int alone)
-{ 
-	fpreal currentTime = CHgetEvalTime();
+{
+	auto currentTime = CHgetEvalTime();
 
 	bool useUnsharedEdgesState;
 	PRM_ACCESS::Get::IntPRM(this, useUnsharedEdgesState, UI::useUnsharedEdgesToggle_Parameter, currentTime);
@@ -287,7 +290,7 @@ SOP_Operator::MakePerfectCircleFromEachEdgeIsland(GA_EdgeIslandBundle& edgeislan
 				// move points to new position
 				this->gdp->setPos3(*it, circleCenter);
 
-				UT_Vector3 newPosition = this->gdp->getPos3(*it);
+				auto newPosition = this->gdp->getPos3(*it);
 				switch (radiusModeState)
 				{
 					case 1:
@@ -338,7 +341,7 @@ SOP_Operator::cookMySop(OP_Context& context)
 		if (useUnsharedEdgesState)
 		{
 			auto gop = GroupCreator(this->gdp);			
-			this->_edgeUnsharedGroup = (GA_EdgeGroup*)gop.createGroup(GA_GROUP_EDGE);
+			this->_edgeUnsharedGroup = static_cast<GA_EdgeGroup*>(gop.createGroup(GA_GROUP_EDGE));
 
 			if (this->_edgeUnsharedGroup) GUfindUnsharedEdges(*this->gdp, *this->_edgeUnsharedGroup);
 			if (!this->_edgeUnsharedGroup || this->_edgeUnsharedGroup->isEmpty())
@@ -393,7 +396,7 @@ MSS_Selector::MSS_PerfectCircleSelector(OP3D_View& viewer, PI_SelectorTemplate& 
 
 BM_InputSelector*
 MSS_Selector::CreateMe(BM_View& viewer, PI_SelectorTemplate& templ)
-{ return new MSS_Selector((OP3D_View&)viewer, templ); }
+{ return new MSS_Selector(reinterpret_cast<OP3D_View&>(viewer), templ); }
 
 const char*
 MSS_Selector::className() const
