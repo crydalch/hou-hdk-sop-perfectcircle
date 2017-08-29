@@ -43,6 +43,7 @@ INCLUDES                                                           |
 
 // this
 #include "Parameters.h"
+#include "RadiusModeOption.h"
 
 /* -----------------------------------------------------------------
 DEFINES                                                            |
@@ -239,6 +240,7 @@ SOP_Operator::MakePerfectCircleFromEachEdgeIsland(GA_EdgeIslandBundle& edgeislan
 			PROGRESS_ESCAPE(this, "Operation interrupted", progress)
 			edges.insert(edge);
 		}
+
 		GUcircleEdges(edits, *gdp, edges);		
 		for (auto edit : edits)
 		{
@@ -247,7 +249,7 @@ SOP_Operator::MakePerfectCircleFromEachEdgeIsland(GA_EdgeIslandBundle& edgeislan
 		}		
 		
 		// modify radius
-		if (radiusModeState != 0)
+		if (radiusModeState != static_cast<exint>(RadiusModeOption::DEFAULT))
 		{
 			// find center
 			auto circleCenter = UT_Vector3(0.0, 0.0, 0.0);
@@ -276,7 +278,7 @@ SOP_Operator::MakePerfectCircleFromEachEdgeIsland(GA_EdgeIslandBundle& edgeislan
 				farthestPosition = currentDistance >= farthestDistance ? position.second : farthestPosition;
 			}
 
-			// modify radius
+			// set radius
 			it = island.Begin();
 			for (it; !it.atEnd(); it.advance())
 			{
@@ -293,15 +295,9 @@ SOP_Operator::MakePerfectCircleFromEachEdgeIsland(GA_EdgeIslandBundle& edgeislan
 				auto newPosition = this->gdp->getPos3(*it);
 				switch (radiusModeState)
 				{
-					case 1:
-						{ newPosition += (direction * (closestPosition - circleCenter).length()); }
-						break;
-					case 2:
-						{ newPosition += (direction * (farthestPosition - circleCenter).length()); }
-						break;
-					case 3:
-						{ newPosition += (direction * radiusValueState); }
-						break;
+					case static_cast<exint>(RadiusModeOption::CLOSEST_POINT): { newPosition += (direction * (closestPosition - circleCenter).length()); } break;
+					case static_cast<exint>(RadiusModeOption::FARTHEST_POINT): { newPosition += (direction * (farthestPosition - circleCenter).length()); } break;
+					case static_cast<exint>(RadiusModeOption::CUSTOM): { newPosition += (direction * radiusValueState); } break;
 				}
 
 				this->gdp->setPos3(*it, newPosition);
@@ -363,7 +359,7 @@ SOP_Operator::cookMySop(OP_Context& context)
 			}
 		}
 
-		// edge selection can contain multiple separate edge island
+		// edge selection can contain multiple separate edge islands
 		auto edgeData = GA_EdgesData();
 		edgeData.Clear();
 

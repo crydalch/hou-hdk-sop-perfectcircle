@@ -104,8 +104,8 @@ public:
 	virtual ~MSS_PerfectCircleSelector();
 	MSS_PerfectCircleSelector(OP3D_View& viewer, PI_SelectorTemplate& templ);
 
-	static BM_InputSelector*			CreateMe(BM_View& Viewer, PI_SelectorTemplate& templ);
-	virtual const char*					className() const;
+	static BM_InputSelector*	CreateMe(BM_View& Viewer, PI_SelectorTemplate& templ);
+	const char*					className() const override;
 };
 
 DECLARE_SOP_Namespace_End
