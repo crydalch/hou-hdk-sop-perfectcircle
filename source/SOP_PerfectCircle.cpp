@@ -331,7 +331,7 @@ SOP_Operator::cookMySop(OP_Context& context)
 
 	if (duplicateSource(0, context) < OP_ERROR::UT_ERROR_WARNING && error() < OP_ERROR::UT_ERROR_WARNING && cookInputGroups(context) < OP_ERROR::UT_ERROR_WARNING)
 	{
-		// do we have use group or process whole geometry?
+		// do we use group or process whole geometry?
 		bool useUnsharedEdgesState;;
 		PRM_ACCESS::Get::IntPRM(this, useUnsharedEdgesState, UI::useUnsharedEdgesToggle_Parameter, currentTime);
 		if (useUnsharedEdgesState)
