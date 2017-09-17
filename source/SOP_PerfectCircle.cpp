@@ -73,11 +73,12 @@ PARAMETERLIST_Start(SOP_Operator)
 	UI::input0EdgeGroup_Parameter,
 	UI::useUnsharedEdgesToggle_Parameter,
 	UI::useUnsharedEdgesSeparator_Parameter,
+	UI::filterErrorsSeparator_Parameter,
 	UI::edgeIslandErrorModeChoiceMenu_Parameter,
 
 	UI::mainSectionSwitcher_Parameter,
 	UI::radiusModeChoiceMenu_Parameter,
-	UI::radiusValueFloat_Parameter,
+	UI::radiusValueFloat_Parameter,	
 
 	UI::additionalSectionSwitcher_Parameter,
 	UI::setMorphToggle_Parameter,

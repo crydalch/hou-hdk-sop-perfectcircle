@@ -36,6 +36,7 @@ INCLUDES                                                           |
 #include <Macros/FloatPRM.h>
 #include <Macros/TogglePRM.h>
 #include <Macros/ErrorLevelMenuPRM.h>
+#include <Macros/SeparatorPRM.h>
 
 // this
 #include "SOP_PerfectCircle.h"
@@ -60,9 +61,10 @@ DECLARE_SOP_Namespace_Start()
 
 	namespace UI
 	{
-		__DECLARE__Filter_Section_PRM(4)
+		__DECLARE__Filter_Section_PRM(5)
 		DECLARE_Default_EdgeGroup_Input_0_PRM(input0)
-		DECLARE_Toggle_with_Separator_OFF_PRM("useunsharededges", "Use Unshared Edges", "useunsharededgesseparator", 0, "Use unshared edges instead of edge group.", useUnsharedEdges)
+		DECLARE_Toggle_with_Separator_OFF_PRM("useunsharededges", "Use Unshared Edges", "useunsharededgesseparator", 0, "Use unshared edges instead of edge group.", useUnsharedEdges)		
+		DECLARE_Custom_Separator_PRM("filtererrorsseparator", filterErrors)
 		DECLARE_ErroLevelMenu_PRM("edgeislanderrormode", "Edge Island Error Mode", 1, "Specify edge island node error mode.", edgeIsland)
 
 		__DECLARE_Main_Section_PRM(2)
@@ -77,9 +79,8 @@ DECLARE_SOP_Namespace_Start()
 			PRM_Name(nullptr)
 		};
 		static auto		radiusModeChoiceMenuParm_ChoiceList = PRM_ChoiceList(PRM_CHOICELIST_SINGLE, radiusModeChoiceMenuParm_Choices);
-		auto			radiusModeChoiceMenu_Parameter = PRM_Template(PRM_ORD, 1, &radiusModeChoiceMenuParm_Name, 0, &radiusModeChoiceMenuParm_ChoiceList, &radiusModeChoiceMenuParm_Range, &SOP_Operator::CallbackSetRadiusMode, nullptr, 1, "Specify radius mode.");
-		
-		DECLARE_Custom_Float_0R_to_MaxU_PRM("radiusvalue", "Value", 1, 0.5, 0, "2 * r = 1 unit", radiusValue)
+		auto			radiusModeChoiceMenu_Parameter = PRM_Template(PRM_ORD, 1, &radiusModeChoiceMenuParm_Name, 0, &radiusModeChoiceMenuParm_ChoiceList, &radiusModeChoiceMenuParm_Range, &SOP_Operator::CallbackSetRadiusMode, nullptr, 1, "Specify radius mode.");		
+		DECLARE_Custom_Float_0R_to_MaxU_PRM("radiusvalue", "Value", 1, 0.5, 0, "2 * r = 1 unit", radiusValue)		
 
 		__DECLARE_Additional_Section_PRM(7)
 		DECLARE_Toggle_with_Separator_OFF_PRM("setmorph", "Morph", "setmorphseparator", &SOP_Operator::CallbackSetMorph, "Blend between original and modified position.", setMorph)
