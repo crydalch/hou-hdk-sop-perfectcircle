@@ -41,7 +41,7 @@ DEFINES                                                            |
 ----------------------------------------------------------------- */
 
 #define SOP_Operator		GET_SOP_Namespace()::SOP_PerfectCircle
-#define SOP_SmallName		"modeling::perfectcircle::1.0"
+#define SOP_SmallName		"modeling::perfectcircle::1.1"
 #define SOP_BigName			"Perfect Circle"
 #define SOP_TabMenuPath		"Toolkit/Modeling"
 

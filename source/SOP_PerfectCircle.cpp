@@ -189,17 +189,18 @@ SOP_Operator::MakePerfectCircleFromEachEdgeIsland(GA_EdgeIslandBundle& edgeislan
 		
 	exint							radiusModeState;	
 	bool							setMorphState;
-
 	fpreal							radiusValueState;
 	fpreal							morphValueState;
+	exint							edgeIslandErrorLevelState;
 
 	PRM_ACCESS::Get::IntPRM(this, radiusModeState, UI::radiusModeChoiceMenu_Parameter, time);
 	PRM_ACCESS::Get::FloatPRM(this, radiusValueState, UI::radiusValueFloat_Parameter, time);	
 
 	PRM_ACCESS::Get::IntPRM(this, setMorphState, UI::setMorphToggle_Parameter, time);
-	PRM_ACCESS::Get::FloatPRM(this, morphValueState, UI::morphValueFloat_Parameter, time);	
-			
+	PRM_ACCESS::Get::FloatPRM(this, morphValueState, UI::morphValueFloat_Parameter, time);				
 	morphValueState = setMorphState ? 0.01 * morphValueState : 1.0;				// from percentage
+	
+	PRM_ACCESS::Get::IntPRM(this, edgeIslandErrorLevelState, UI::edgeIslandErrorModeChoiceMenu_Parameter, time);
 
 #define PROGRESS_ESCAPE(node, message, passedprogress) if (passedprogress.wasInterrupted()) { node->addError(SOP_ErrorCodes::SOP_MESSAGE, message); return error(); }
 	for (auto island : edgeislands)
@@ -211,9 +212,6 @@ SOP_Operator::MakePerfectCircleFromEachEdgeIsland(GA_EdgeIslandBundle& edgeislan
 #endif // DEBUG_ISLANDS
 
 		// ignore invalid ones
-		exint edgeIslandErrorLevelState;
-		PRM_ACCESS::Get::IntPRM(this, edgeIslandErrorLevelState, UI::edgeIslandErrorModeChoiceMenu_Parameter, time);
-
 		auto message = "Edge islands with endpoints detected.";
 		if (!island.IsValid())
 		{						
