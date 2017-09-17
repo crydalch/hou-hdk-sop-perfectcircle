@@ -73,6 +73,8 @@ PARAMETERLIST_Start(SOP_Operator)
 	UI::input0EdgeGroup_Parameter,
 	UI::useUnsharedEdgesToggle_Parameter,
 	UI::useUnsharedEdgesSeparator_Parameter,
+	UI::edgeIslandErrorModeChoiceMenu_Parameter,
+
 	UI::mainSectionSwitcher_Parameter,
 	UI::radiusModeChoiceMenu_Parameter,
 	UI::radiusValueFloat_Parameter,
@@ -91,7 +93,7 @@ SOP_Operator::updateParmsFlags()
 	DEFAULTS_UpdateParmsFlags(SOP_Base_Operator)
 
 	// is input connected?
-	exint is0Connected = getInput(0) == nullptr ? 0 : 1;
+	const exint is0Connected = getInput(0) == nullptr ? 0 : 1;
 
 	/* ---------------------------- Set Global Visibility ---------------------------- */
 
@@ -119,7 +121,7 @@ IMPLEMENT_DescriptionPRM_Callback(SOP_Operator, UI)
 int
 SOP_Operator::CallbackSetRadiusMode(void* data, int index, float time, const PRM_Template* tmp)
 {
-	auto me = reinterpret_cast<SOP_Operator*>(data);
+	const auto me = reinterpret_cast<SOP_Operator*>(data);
 	if (!me) return 0;
 
 	// TODO: figure out why restoreFactoryDefaults() doesn't work
@@ -132,7 +134,7 @@ SOP_Operator::CallbackSetRadiusMode(void* data, int index, float time, const PRM
 int
 SOP_Operator::CallbackSetMorph(void* data, int index, float time, const PRM_Template* tmp)
 {
-	auto me = reinterpret_cast<SOP_Operator*>(data);
+	const auto me = reinterpret_cast<SOP_Operator*>(data);
 	if (!me) return 0;
 
 	// TODO: figure out why restoreFactoryDefaults() doesn't work
@@ -165,7 +167,7 @@ SOP_Operator::inputLabel(unsigned input) const
 OP_ERROR
 SOP_Operator::cookInputGroups(OP_Context& context, int alone)
 {
-	auto currentTime = CHgetEvalTime();
+	const auto currentTime = CHgetEvalTime();
 
 	bool useUnsharedEdgesState;
 	PRM_ACCESS::Get::IntPRM(this, useUnsharedEdgesState, UI::useUnsharedEdgesToggle_Parameter, currentTime);
@@ -209,16 +211,29 @@ SOP_Operator::MakePerfectCircleFromEachEdgeIsland(GA_EdgeIslandBundle& edgeislan
 #endif // DEBUG_ISLANDS
 
 		// ignore invalid ones
+		exint edgeIslandErrorLevelState;
+		PRM_ACCESS::Get::IntPRM(this, edgeIslandErrorLevelState, UI::edgeIslandErrorModeChoiceMenu_Parameter, time);
+
+		auto message = "Edge islands with endpoints detected.";
 		if (!island.IsValid())
-		{
-			addWarning(SOP_ErrorCodes::SOP_MESSAGE, "Edge islands with endpoints detected.");
-			continue;
+		{						
+			switch (edgeIslandErrorLevelState)
+			{
+				default: /* do nothing */ continue;
+				case static_cast<exint>(HOU_NODE_ERROR_LEVEL::Warning) : { addWarning(SOP_ErrorCodes::SOP_MESSAGE, message); } continue;
+				case static_cast<exint>(HOU_NODE_ERROR_LEVEL::Error) : { addError(SOP_ErrorCodes::SOP_MESSAGE, message); } return error();				
+			}
 		}
 
 		if (island.IsValid() && island.HasMultiOffsets())
 		{
-			addWarning(SOP_ErrorCodes::SOP_MESSAGE, "Edge islands with multipoints detected.");
-			continue;
+			message = "Edge islands with multipoints detected.";
+			switch (edgeIslandErrorLevelState)
+			{
+				default: /* do nothing */ continue;
+				case static_cast<exint>(HOU_NODE_ERROR_LEVEL::Warning) : { addWarning(SOP_ErrorCodes::SOP_MESSAGE, message); } continue;
+				case static_cast<exint>(HOU_NODE_ERROR_LEVEL::Error) : { addError(SOP_ErrorCodes::SOP_MESSAGE, message); } return error();				
+			}
 		}
 
 		// clear everything to be sure that nothing is cached
@@ -262,17 +277,17 @@ SOP_Operator::MakePerfectCircleFromEachEdgeIsland(GA_EdgeIslandBundle& edgeislan
 			circleCenter = circleCenter / island.Entries();
 
 			// find closest and farthest position
-			auto posIt = originalPositions.begin();
+			const auto posIt = originalPositions.begin();
 			auto closestPosition = UT_Vector3(originalPositions[posIt->first]);
 			auto farthestPosition = UT_Vector3(originalPositions[posIt->first]);
 					
-			for (auto position : originalPositions)
+			for (const auto position : originalPositions)
 			{
 				PROGRESS_ESCAPE(this, "Operation interrupted", progress)
 
-				auto currentDistance = (circleCenter - position.second).length();
-				auto closestDistance = (circleCenter - closestPosition).length();
-				auto farthestDistance = (circleCenter - farthestPosition).length();
+				const auto currentDistance = (circleCenter - position.second).length();
+				const auto closestDistance = (circleCenter - closestPosition).length();
+				const auto farthestDistance = (circleCenter - farthestPosition).length();
 
 				closestPosition = currentDistance <= closestDistance ? position.second : closestPosition;
 				farthestPosition = currentDistance >= farthestDistance ? position.second : farthestPosition;
@@ -387,7 +402,7 @@ SELECTOR IMPLEMENTATION                                            |
 MSS_Selector::~MSS_PerfectCircleSelector() { }
 
 MSS_Selector::MSS_PerfectCircleSelector(OP3D_View& viewer, PI_SelectorTemplate& templ) 
-: MSS_ReusableSelector(viewer, templ, SOP_SmallName, CONST_EdgeGroupInput0_Name, 0, true)
+: MSS_ReusableSelector(viewer, templ, SOP_SmallName, CONST_EdgeGroupInput0_Name, nullptr, true)
 { this->setAllowUseExistingSelection(false); }
 
 BM_InputSelector*
