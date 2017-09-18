@@ -74,7 +74,8 @@ PARAMETERLIST_Start(SOP_Operator)
 	UI::useUnsharedEdgesToggle_Parameter,
 	UI::useUnsharedEdgesSeparator_Parameter,
 	UI::filterErrorsSeparator_Parameter,
-	UI::edgeIslandErrorModeChoiceMenu_Parameter,
+	UI::groupNotSpecifiedErrorModeChoiceMenu_Parameter,
+	UI::improperEdgeIslandErrorModeChoiceMenu_Parameter,
 
 	UI::mainSectionSwitcher_Parameter,
 	UI::radiusModeChoiceMenu_Parameter,
@@ -107,6 +108,7 @@ SOP_Operator::updateParmsFlags()
 
 	PRM_ACCESS::Get::IntPRM(this, activeState, UI::useUnsharedEdgesToggle_Parameter, currentTime);
 	changed |= enableParm(UI::input0EdgeGroup_Parameter.getToken(), !activeState);
+	changed |= enableParm(UI::groupNotSpecifiedErrorModeChoiceMenu_Parameter.getToken(), !activeState);
 
 	PRM_ACCESS::Get::IntPRM(this, visibilityState, UI::setMorphToggle_Parameter, currentTime);
 	changed |= setVisibleState(UI::morphValueFloat_Parameter.getToken(), visibilityState);
@@ -118,6 +120,19 @@ SOP_Operator::updateParmsFlags()
 }
 
 IMPLEMENT_DescriptionPRM_Callback(SOP_Operator, UI)
+
+int
+SOP_Operator::CallbackUseUnsharedEdges(void* data, int index, float time, const PRM_Template* tmp)
+{
+	const auto me = reinterpret_cast<SOP_Operator*>(data);
+	if (!me) return 0;
+
+	// TODO: figure out why restoreFactoryDefaults() doesn't work
+	auto defVal = static_cast<exint>(UI::groupNotSpecifiedErrorModeChoiceMenu_Parameter.getFactoryDefaults()->getOrdinal());
+	PRM_ACCESS::Set::IntPRM(me, defVal, UI::groupNotSpecifiedErrorModeChoiceMenu_Parameter, time);
+
+	return 1;
+}
 
 int
 SOP_Operator::CallbackSetRadiusMode(void* data, int index, float time, const PRM_Template* tmp)
@@ -201,7 +216,7 @@ SOP_Operator::MakePerfectCircleFromEachEdgeIsland(GA_EdgeIslandBundle& edgeislan
 	PRM_ACCESS::Get::FloatPRM(this, morphValueState, UI::morphValueFloat_Parameter, time);				
 	morphValueState = setMorphState ? 0.01 * morphValueState : 1.0;				// from percentage
 	
-	PRM_ACCESS::Get::IntPRM(this, edgeIslandErrorLevelState, UI::edgeIslandErrorModeChoiceMenu_Parameter, time);
+	PRM_ACCESS::Get::IntPRM(this, edgeIslandErrorLevelState, UI::improperEdgeIslandErrorModeChoiceMenu_Parameter, time);
 
 #define PROGRESS_ESCAPE(node, message, passedprogress) if (passedprogress.wasInterrupted()) { node->addError(SOP_ErrorCodes::SOP_MESSAGE, message); return error(); }
 	for (auto island : edgeislands)
@@ -368,7 +383,16 @@ SOP_Operator::cookMySop(OP_Context& context)
 			if (!this->_edgeGroupInput0 || this->_edgeGroupInput0->isEmpty())
 			{
 				clearSelection();
-				addWarning(SOP_ErrorCodes::SOP_ERR_BADGROUP);
+
+				exint groupNotSpecifiedState;
+				PRM_ACCESS::Get::IntPRM(this, groupNotSpecifiedState, UI::groupNotSpecifiedErrorModeChoiceMenu_Parameter, currentTime);
+				switch (groupNotSpecifiedState)
+				{
+					default: /* do nothing */ break;
+					case static_cast<exint>(HOU_NODE_ERROR_LEVEL::Warning) : { addWarning(SOP_ErrorCodes::SOP_ERR_BADGROUP); } break;
+					case static_cast<exint>(HOU_NODE_ERROR_LEVEL::Error) : { addError(SOP_ErrorCodes::SOP_ERR_BADGROUP); } break;
+				}
+
 				return error();
 			}
 		}

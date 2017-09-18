@@ -61,11 +61,12 @@ DECLARE_SOP_Namespace_Start()
 
 	namespace UI
 	{
-		__DECLARE__Filter_Section_PRM(5)
+		__DECLARE__Filter_Section_PRM(6)
 		DECLARE_Default_EdgeGroup_Input_0_PRM(input0)
-		DECLARE_Toggle_with_Separator_OFF_PRM("useunsharededges", "Use Unshared Edges", "useunsharededgesseparator", 0, "Use unshared edges instead of edge group.", useUnsharedEdges)		
+		DECLARE_Toggle_with_Separator_OFF_PRM("useunsharededges", "Use Unshared Edges", "useunsharededgesseparator", &SOP_Operator::CallbackUseUnsharedEdges, "Use unshared edges instead of edge group.", useUnsharedEdges)
 		DECLARE_Custom_Separator_PRM("filtererrorsseparator", filterErrors)
-		DECLARE_ErroLevelMenu_PRM("edgeislanderrormode", "Edge Island Error Mode", 1, "Specify edge island node error mode.", edgeIsland)
+		DECLARE_ErroLevelMenu_PRM("groupnotspecifiederrormode", "Group Not Specified", 1, 0, "Specify group not specified node error mode.", groupNotSpecified)
+		DECLARE_ErroLevelMenu_PRM("improperedgeislanderrormode", "Improper Edge Island", 1, 0, "Specify improper edge island detection node error mode.", improperEdgeIsland)
 
 		__DECLARE_Main_Section_PRM(2)
 		static auto		radiusModeChoiceMenuParm_Name = PRM_Name("radiusmode", "Radius Mode");

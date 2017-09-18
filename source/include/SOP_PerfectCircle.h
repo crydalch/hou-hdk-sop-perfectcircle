@@ -80,6 +80,7 @@ DECLARE_SOP_Namespace_Start()
 		OP_ERROR				cookInputGroups(OP_Context& context, int alone = 0) override;
 		static PRM_Template		parametersList[];
 		
+		static int				CallbackUseUnsharedEdges(void* data, int index, float time, const PRM_Template* tmp);
 		static int				CallbackSetRadiusMode(void* data, int index, float time, const PRM_Template* tmp);
 		static int				CallbackSetMorph(void* data, int index, float time, const PRM_Template* tmp);
 
