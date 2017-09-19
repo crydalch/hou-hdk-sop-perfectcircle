@@ -14,4 +14,5 @@ Overview [video](https://www.youtube.com/watch?v=GSjSH5CyHY4&list=PLWInthQ-GtLhz
 - [ ] Linux
 
 **TODO:**
+- [ ] add multithreading (but only if I will be reaaalllyyy bored)
 - [ ] add icons
