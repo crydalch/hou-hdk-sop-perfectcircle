@@ -357,8 +357,8 @@ OP_ERROR
 SOP_Operator::cookMySop(OP_Context& context)
 {	
 	DEFAULTS_CookMySop()
-
-	if (duplicateSource(0, context) < OP_ERROR::UT_ERROR_WARNING && error() < OP_ERROR::UT_ERROR_WARNING && cookInputGroups(context) < OP_ERROR::UT_ERROR_WARNING)
+	
+	if (duplicatePointSource(0, context) < OP_ERROR::UT_ERROR_WARNING && error() < OP_ERROR::UT_ERROR_WARNING && cookInputGroups(context) < OP_ERROR::UT_ERROR_WARNING)
 	{
 		// do we use group or process whole geometry?
 		bool useUnsharedEdgesState;;
