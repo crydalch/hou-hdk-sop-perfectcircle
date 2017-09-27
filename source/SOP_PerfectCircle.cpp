@@ -34,7 +34,14 @@ INCLUDES                                                           |
 #include <PRM/PRM_Include.h>
 #include <PRM/PRM_SpareData.h>
 #include <GU/GU_EdgeUtils.h>
-#include <sys/SYS_Math.h>
+
+#if _WIN32		
+	#include <sys/SYS_Math.h>
+#elif __APPLE__
+	#include <SYS/SYS_Math.h>
+#elif __linux
+	#include <SYS/SYS_Math.h>
+#endif		
 
 // hou-hdk-common
 #include <Macros/ParameterList.h>
