@@ -1,5 +1,3 @@
-# SOP Perfect Circle HDK implementation. #
-
 ![Example](/images/perfect-circle-selection-1.gif)
 
 Overview [video](https://www.youtube.com/watch?v=GSjSH5CyHY4&list=PLWInthQ-GtLhzoyqhaJAvzico8mkXMyDI&index=3) on YouTube.
