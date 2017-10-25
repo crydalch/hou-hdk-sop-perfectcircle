@@ -57,7 +57,7 @@ DEFINES                                                            |
 #define SOP_Operator			GET_SOP_Namespace()::SOP_PerfectCircle
 #define SOP_SmallName			"modeling::perfectcircle::1.0"
 #define SOP_Input_Name_0		"Geometry"
-#define SOP_Icon_Name			"nodeway_short_dark_WB.png"
+#define SOP_Icon_Name			"perfectcircle"
 #define SOP_Base_Operator		SOP_Node
 #define MSS_Selector			GET_SOP_Namespace()::MSS_PerfectCircleSelector
 
